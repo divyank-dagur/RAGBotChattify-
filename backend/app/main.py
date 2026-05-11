@@ -14,9 +14,12 @@ from app.api.router import api_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await init_db()
+    # Ensure all data directories exist
+    db_path = settings.DATABASE_URL.replace("sqlite+aiosqlite:///", "")
+    os.makedirs(os.path.dirname(db_path), exist_ok=True)
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
     os.makedirs(settings.CHROMA_PERSIST_DIR, exist_ok=True)
+    await init_db()
     # Mount static files after directories are created
     app.mount("/api/files", StaticFiles(directory=settings.UPLOAD_DIR), name="files")
     yield
