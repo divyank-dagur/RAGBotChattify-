@@ -7,6 +7,7 @@ from pydantic import BaseModel
 class MessageCreate(BaseModel):
     content: str
     attachments: list[dict] | None = None
+    strict_rag: bool = False
 
 
 class MessageResponse(BaseModel):

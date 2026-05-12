@@ -12,7 +12,7 @@ interface ChatPanelProps {
   citations: Citation[];
   modelId: string;
   onModelChange: (id: string) => void;
-  onSendMessage: (content: string) => void;
+  onSendMessage: (content: string, strictRag?: boolean) => void;
   onStopStreaming: () => void;
   className?: string;
 }

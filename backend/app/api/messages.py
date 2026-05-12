@@ -92,9 +92,28 @@ async def send_message(
             context_text = "\n\n".join(
                 f"[Source: {c['source']}]\n{c['content']}" for c in rag_context
             )
-            system_parts.append(
-                f"Use the following context to answer. Cite sources when relevant:\n\n{context_text}"
-            )
+            if body.strict_rag:
+                # Strict mode: answer ONLY from documents, refuse if no relevant context
+                system_parts = [
+                    "You are RAGBot Chattify in STRICT DOCUMENT MODE. "
+                    "You must answer ONLY using the provided document context below. "
+                    "Do NOT use any prior knowledge. If the answer is not found in the provided context, "
+                    "say: 'This information is not available in the uploaded documents.' "
+                    "Always cite the source document for every claim you make.",
+                    f"Document context:\n\n{context_text}",
+                ]
+            else:
+                system_parts.append(
+                    f"Use the following context to answer. Cite sources when relevant:\n\n{context_text}"
+                )
+        elif body.strict_rag:
+            # Strict mode but no context found
+            system_parts = [
+                "You are RAGBot Chattify in STRICT DOCUMENT MODE. "
+                "No relevant documents were found for this query. "
+                "Respond with: 'No relevant information was found in the uploaded documents for this query. "
+                "Please upload relevant documents to your knowledge collection or switch off Strict RAG mode.'"
+            ]
 
     llm_messages = [{"role": "system", "content": "\n\n---\n\n".join(system_parts)}]
 

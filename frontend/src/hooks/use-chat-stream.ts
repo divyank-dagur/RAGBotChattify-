@@ -10,7 +10,7 @@ interface UseChatStreamReturn {
   setMessages: (msgs: Message[]) => void;
   isStreaming: boolean;
   citations: Citation[];
-  sendMessage: (content: string, chatId: string) => Promise<void>;
+  sendMessage: (content: string, chatId: string, strictRag?: boolean) => Promise<void>;
   stopStreaming: () => void;
 }
 
@@ -34,7 +34,7 @@ export function useChatStream(): UseChatStreamReturn {
   }, []);
 
   const sendMessage = useCallback(
-    async (content: string, chatId: string) => {
+    async (content: string, chatId: string, strictRag?: boolean) => {
       // Abort any previous stream
       abortRef.current?.abort();
 
@@ -79,7 +79,7 @@ export function useChatStream(): UseChatStreamReturn {
               "Content-Type": "application/json",
               ...(token ? { Authorization: `Bearer ${token}` } : {}),
             },
-            body: JSON.stringify({ content }),
+            body: JSON.stringify({ content, strict_rag: strictRag || false }),
             signal: controller.signal,
           },
         );

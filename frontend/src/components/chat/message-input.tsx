@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect, type KeyboardEvent } from "react";
 import TextareaAutosize from "react-textarea-autosize";
-import { ArrowUp, Paperclip, Square, Loader2 } from "lucide-react";
+import { ArrowUp, Paperclip, Square, Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -13,7 +13,7 @@ import { ModelSelector } from "./model-selector";
 import { cn } from "@/lib/utils";
 
 interface MessageInputProps {
-  onSend: (content: string) => void;
+  onSend: (content: string, strictRag: boolean) => void;
   onStop?: () => void;
   isStreaming: boolean;
   modelId: string;
@@ -33,6 +33,7 @@ export function MessageInput({
 }: MessageInputProps) {
   const [value, setValue] = useState("");
   const [isMac, setIsMac] = useState(false);
+  const [strictRag, setStrictRag] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -42,11 +43,11 @@ export function MessageInput({
   const handleSend = useCallback(() => {
     const trimmed = value.trim();
     if (!trimmed || isStreaming || disabled) return;
-    onSend(trimmed);
+    onSend(trimmed, strictRag);
     setValue("");
     // Re-focus after send
     setTimeout(() => textareaRef.current?.focus(), 0);
-  }, [value, isStreaming, disabled, onSend]);
+  }, [value, isStreaming, disabled, onSend, strictRag]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -99,6 +100,29 @@ export function MessageInput({
               onChange={onModelChange}
               compact
             />
+
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    variant={strictRag ? "outline" : "ghost"}
+                    size="icon-xs"
+                    onClick={() => setStrictRag(!strictRag)}
+                    className={cn(
+                      "transition-all duration-200",
+                      strictRag
+                        ? "border-ember/40 bg-ember-muted text-ember"
+                        : "text-muted-foreground/60 hover:text-muted-foreground",
+                    )}
+                  />
+                }
+              >
+                <ShieldCheck className="size-3.5" />
+              </TooltipTrigger>
+              <TooltipContent>
+                {strictRag ? "Strict RAG: ON — answers only from documents" : "Strict RAG: OFF — answers from documents + LLM"}
+              </TooltipContent>
+            </Tooltip>
 
             <Tooltip>
               <TooltipTrigger

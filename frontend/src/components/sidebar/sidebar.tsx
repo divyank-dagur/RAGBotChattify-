@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Plus, Sparkles, BookOpen, Settings, LogOut, Sun, Moon } from "lucide-react";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { Plus, Sparkles, BookOpen, LogOut, Sun, Moon, GripVertical } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -25,6 +25,10 @@ interface SidebarProps {
   onNavigateKnowledge: () => void;
 }
 
+const MIN_WIDTH = 200;
+const MAX_WIDTH = 480;
+const DEFAULT_WIDTH = 288; // 18rem = w-72
+
 export function Sidebar({
   isOpen,
   chats,
@@ -37,16 +41,72 @@ export function Sidebar({
   const { user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [width, setWidth] = useState(DEFAULT_WIDTH);
+  const [isDragging, setIsDragging] = useState(false);
+  const sidebarRef = useRef<HTMLElement>(null);
 
   useEffect(() => setMounted(true), []);
 
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, e.clientX));
+      setWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    // Prevent text selection while dragging
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [isDragging]);
+
   return (
     <aside
+      ref={sidebarRef}
       className={cn(
-        "flex h-full flex-col border-r border-border/50 bg-sidebar transition-all duration-300 ease-out",
-        isOpen ? "w-72" : "w-0 overflow-hidden border-r-0",
+        "relative flex h-full flex-col border-r border-border/50 bg-sidebar transition-[width] ease-out",
+        isOpen ? "" : "w-0 overflow-hidden border-r-0",
+        isDragging ? "duration-0" : "duration-300",
       )}
+      style={isOpen ? { width: `${width}px` } : undefined}
     >
+      {/* Drag handle */}
+      {isOpen && (
+        <div
+          onMouseDown={handleMouseDown}
+          className={cn(
+            "absolute right-0 top-0 z-20 flex h-full w-1.5 cursor-col-resize items-center justify-center",
+            "hover:bg-ember/10 active:bg-ember/20 transition-colors",
+            isDragging && "bg-ember/20",
+          )}
+        >
+          <div
+            className={cn(
+              "h-8 w-1 rounded-full transition-colors",
+              isDragging ? "bg-ember/60" : "bg-border/60 hover:bg-ember/40",
+            )}
+          />
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex h-14 shrink-0 items-center gap-2.5 px-4">
         <div className="flex size-8 items-center justify-center rounded-lg bg-ember-muted">

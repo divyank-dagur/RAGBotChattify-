@@ -66,8 +66,8 @@ export default function ChatPage() {
   }, [loaded, chatId, searchParams, router]);
 
   const handleSend = useCallback(
-    (content: string) => {
-      stream.sendMessage(content, chatId);
+    (content: string, strictRag?: boolean) => {
+      stream.sendMessage(content, chatId, strictRag);
     },
     // sendMessage is stable (useCallback with [])
     // eslint-disable-next-line react-hooks/exhaustive-deps
