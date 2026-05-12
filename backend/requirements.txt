@@ -15,3 +15,4 @@ python-multipart>=0.0.6
 pypdf2>=3.0.0
 httpx>=0.25.0
 eval_type_backport>=0.2.0
+rank-bm25>=0.2.2

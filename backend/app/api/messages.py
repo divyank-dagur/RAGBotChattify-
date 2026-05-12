@@ -84,30 +84,48 @@ async def send_message(
     # Build message history for LLM — combine system prompts into one
     system_parts = [_build_system_prompt()]
 
-    # RAG context
+    # RAG context with confidence assessment
     rag_context = None
+    rag_confidence = "none"
     if chat.collection_id:
-        rag_context = await get_rag_context(body.content, chat.collection_id)
+        rag_context, rag_confidence = await get_rag_context(body.content, chat.collection_id)
         if rag_context:
             context_text = "\n\n".join(
                 f"[Source: {c['source']}]\n{c['content']}" for c in rag_context
             )
             if body.strict_rag:
-                # Strict mode: answer ONLY from documents, refuse if no relevant context
-                system_parts = [
-                    "You are RAGBot Chattify in STRICT DOCUMENT MODE. "
-                    "You must answer ONLY using the provided document context below. "
-                    "Do NOT use any prior knowledge. If the answer is not found in the provided context, "
-                    "say: 'This information is not available in the uploaded documents.' "
-                    "Always cite the source document for every claim you make.",
-                    f"Document context:\n\n{context_text}",
-                ]
+                if rag_confidence == "low":
+                    # Low confidence in strict mode — refuse instead of hallucinating
+                    system_parts = [
+                        "You are RAGBot Chattify in STRICT DOCUMENT MODE. "
+                        "The retrieved document context has LOW relevance to the user's question. "
+                        "You MUST respond with: 'I found some documents but they don't seem relevant enough to answer your question confidently. "
+                        "Could you rephrase your question, or upload more specific documents to the knowledge collection?' "
+                        "Do NOT attempt to answer from the low-relevance context."
+                    ]
+                else:
+                    system_parts = [
+                        "You are RAGBot Chattify in STRICT DOCUMENT MODE. "
+                        "You must answer ONLY using the provided document context below. "
+                        "Do NOT use any prior knowledge. If the answer is not found in the provided context, "
+                        "say: 'This information is not available in the uploaded documents.' "
+                        "Always cite the source document for every claim you make.",
+                        f"Document context:\n\n{context_text}",
+                    ]
             else:
-                system_parts.append(
-                    f"Use the following context to answer. Cite sources when relevant:\n\n{context_text}"
-                )
+                if rag_confidence == "low":
+                    # Low confidence — warn the LLM to be cautious
+                    system_parts.append(
+                        f"The following document context was retrieved but has LOW relevance to the query. "
+                        f"Use it cautiously. If the context doesn't help answer the question, say so and "
+                        f"answer from your own knowledge instead. Mention that the documents didn't contain "
+                        f"strong matches.\n\n{context_text}"
+                    )
+                else:
+                    system_parts.append(
+                        f"Use the following context to answer. Cite sources when relevant:\n\n{context_text}"
+                    )
         elif body.strict_rag:
-            # Strict mode but no context found
             system_parts = [
                 "You are RAGBot Chattify in STRICT DOCUMENT MODE. "
                 "No relevant documents were found for this query. "

@@ -9,6 +9,7 @@ import {
   MoreHorizontal,
   Trash2,
   Pencil,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +33,7 @@ interface ChatHeaderProps {
   sidebarOpen: boolean;
   onToggleSidebar: () => void;
   onShare?: () => Promise<string | null>;
+  onExport?: (format: "markdown" | "json") => void;
   onRename?: (title: string) => void;
   onDelete?: () => void;
 }
@@ -42,6 +44,7 @@ export function ChatHeader({
   sidebarOpen,
   onToggleSidebar,
   onShare,
+  onExport,
   onRename,
   onDelete,
 }: ChatHeaderProps) {
@@ -127,7 +130,7 @@ export function ChatHeader({
           </Tooltip>
         )}
 
-        {(onRename || onDelete) && (
+        {(onRename || onDelete || onExport) && (
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
@@ -153,7 +156,25 @@ export function ChatHeader({
                   Rename
                 </DropdownMenuItem>
               )}
-              {onRename && onDelete && <DropdownMenuSeparator />}
+              {onExport && (
+                <DropdownMenuItem
+                  onClick={() => onExport("markdown")}
+                  className="cursor-pointer gap-2"
+                >
+                  <Download className="size-3.5" />
+                  Export Markdown
+                </DropdownMenuItem>
+              )}
+              {onExport && (
+                <DropdownMenuItem
+                  onClick={() => onExport("json")}
+                  className="cursor-pointer gap-2"
+                >
+                  <Download className="size-3.5" />
+                  Export JSON
+                </DropdownMenuItem>
+              )}
+              {(onRename || onExport) && onDelete && <DropdownMenuSeparator />}
               {onDelete && (
                 <DropdownMenuItem
                   variant="destructive"

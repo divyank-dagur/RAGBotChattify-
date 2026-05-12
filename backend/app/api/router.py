@@ -8,6 +8,7 @@ from app.api.artifacts import router as artifacts_router
 from app.api.share import router as share_router
 from app.api.models_list import router as models_router
 from app.api.upload import router as upload_router
+from app.api.export import router as export_router
 
 api_router = APIRouter(prefix="/api")
 api_router.include_router(auth_router)
@@ -18,3 +19,4 @@ api_router.include_router(artifacts_router)
 api_router.include_router(share_router)
 api_router.include_router(models_router)
 api_router.include_router(upload_router)
+api_router.include_router(export_router)

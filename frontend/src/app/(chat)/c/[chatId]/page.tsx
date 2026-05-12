@@ -109,6 +109,42 @@ export default function ChatPage() {
     [chatId, title],
   );
 
+  const handleExport = useCallback(
+    async (format: "markdown" | "json") => {
+      try {
+        const token = localStorage.getItem("access_token");
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"}/chats/${chatId}/export?format=${format}`,
+          { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+        );
+        if (!res.ok) return;
+
+        if (format === "json") {
+          const data = await res.json();
+          const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `${title.replace(/\s+/g, "_")}_export.json`;
+          a.click();
+          URL.revokeObjectURL(url);
+        } else {
+          const text = await res.text();
+          const blob = new Blob([text], { type: "text/markdown" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `${title.replace(/\s+/g, "_")}_export.md`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+      } catch {
+        // Handle error
+      }
+    },
+    [chatId, title],
+  );
+
   const handleDelete = useCallback(async () => {
     try {
       await api.del(`/chats/${chatId}`);
@@ -126,6 +162,7 @@ export default function ChatPage() {
         sidebarOpen={sidebar.isOpen}
         onToggleSidebar={sidebar.toggle}
         onShare={handleShare}
+        onExport={handleExport}
         onRename={handleRename}
         onDelete={handleDelete}
       />
