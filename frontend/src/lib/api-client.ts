@@ -13,11 +13,25 @@ class ApiClient {
     return h;
   }
 
+  private handleAuthError(status: number): void {
+    if (status === 401 && typeof window !== "undefined") {
+      // Token expired or backend restarted — clear tokens and redirect to login
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+      if (!window.location.pathname.startsWith("/login") && !window.location.pathname.startsWith("/register")) {
+        window.location.href = "/login";
+      }
+    }
+  }
+
   async get<T>(path: string): Promise<T> {
     const res = await fetch(`${API_BASE_URL}${path}`, {
       headers: this.headers(),
     });
-    if (!res.ok) throw new ApiError(res.status, await res.text());
+    if (!res.ok) {
+      this.handleAuthError(res.status);
+      throw new ApiError(res.status, await res.text());
+    }
     return res.json();
   }
 
@@ -27,7 +41,10 @@ class ApiClient {
       headers: this.headers({ "Content-Type": "application/json" }),
       body: body ? JSON.stringify(body) : undefined,
     });
-    if (!res.ok) throw new ApiError(res.status, await res.text());
+    if (!res.ok) {
+      this.handleAuthError(res.status);
+      throw new ApiError(res.status, await res.text());
+    }
     return res.json();
   }
 
@@ -37,7 +54,10 @@ class ApiClient {
       headers: this.headers({ "Content-Type": "application/json" }),
       body: JSON.stringify(body),
     });
-    if (!res.ok) throw new ApiError(res.status, await res.text());
+    if (!res.ok) {
+      this.handleAuthError(res.status);
+      throw new ApiError(res.status, await res.text());
+    }
     return res.json();
   }
 
@@ -46,7 +66,10 @@ class ApiClient {
       method: "DELETE",
       headers: this.headers(),
     });
-    if (!res.ok) throw new ApiError(res.status, await res.text());
+    if (!res.ok) {
+      this.handleAuthError(res.status);
+      throw new ApiError(res.status, await res.text());
+    }
   }
 
   async upload<T>(path: string, file: File): Promise<T> {
@@ -57,7 +80,10 @@ class ApiClient {
       headers: this.headers(),
       body: form,
     });
-    if (!res.ok) throw new ApiError(res.status, await res.text());
+    if (!res.ok) {
+      this.handleAuthError(res.status);
+      throw new ApiError(res.status, await res.text());
+    }
     return res.json();
   }
 

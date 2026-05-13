@@ -4,13 +4,14 @@ import os
 import re
 import uuid
 import asyncio
+import threading
 import logging
 from functools import partial
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
-from app.database import get_db
+from app.database import get_db, async_session
 from app.models.user import User
 from app.models.collection import Collection
 from app.models.document import Document
@@ -155,19 +156,38 @@ async def upload_document(
     )
     db.add(doc)
     await db.flush()
+    await db.commit()
 
-    # Ingest in executor to avoid blocking event loop
-    try:
-        chunk_count = await loop.run_in_executor(
-            None, partial(ingest_document, collection_id, doc_id, file_path, file.filename or safe_name)
-        )
-        doc.chunk_count = chunk_count
-        doc.status = "ready"
-    except Exception:
-        logger.exception("Ingestion failed for document %s", doc_id)
-        doc.status = "error"
+    # Ingest in background thread so the request returns immediately
+    def _background_ingest():
+        try:
+            chunk_count = ingest_document(collection_id, doc_id, file_path, file.filename or safe_name)
+            # Update document status using a new sync connection
+            import sqlite3
+            db_path = settings.DATABASE_URL.replace("sqlite+aiosqlite:///", "")
+            conn = sqlite3.connect(db_path)
+            conn.execute(
+                "UPDATE documents SET chunk_count = ?, status = 'ready' WHERE id = ?",
+                (chunk_count, doc_id),
+            )
+            conn.commit()
+            conn.close()
+            logger.info("Ingested document %s: %d chunks", doc_id, chunk_count)
+        except Exception:
+            logger.exception("Ingestion failed for document %s", doc_id)
+            try:
+                import sqlite3
+                db_path = settings.DATABASE_URL.replace("sqlite+aiosqlite:///", "")
+                conn = sqlite3.connect(db_path)
+                conn.execute("UPDATE documents SET status = 'error' WHERE id = ?", (doc_id,))
+                conn.commit()
+                conn.close()
+            except Exception:
+                pass
 
-    await db.flush()
+    thread = threading.Thread(target=_background_ingest, daemon=True)
+    thread.start()
+
     return doc
 
 
