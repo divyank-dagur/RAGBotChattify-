@@ -40,8 +40,15 @@ export function UploadDialog({
   };
 
   const handleUpload = async () => {
+    // Reset errors to pending for retry
+    setFiles((prev) =>
+      prev.map((f) => (f.status === "error" ? { ...f, status: "pending" } : f)),
+    );
+    // Small delay to let state update
+    await new Promise((r) => setTimeout(r, 50));
+
     for (let i = 0; i < files.length; i++) {
-      if (files[i].status !== "pending") continue;
+      if (files[i].status !== "pending" && files[i].status !== "error") continue;
       setFiles((prev) =>
         prev.map((f, idx) => (idx === i ? { ...f, status: "uploading" } : f)),
       );
@@ -62,7 +69,16 @@ export function UploadDialog({
     onUploaded();
   };
 
+  // Reset errored files to pending so they can be retried
+  const retryErrors = () => {
+    setFiles((prev) =>
+      prev.map((f) => (f.status === "error" ? { ...f, status: "pending" } : f)),
+    );
+  };
+
   const pendingCount = files.filter((f) => f.status === "pending").length;
+  const errorCount = files.filter((f) => f.status === "error").length;
+  const canUpload = pendingCount > 0 || errorCount > 0;
 
   // Close on Escape
   useEffect(() => {
@@ -188,12 +204,21 @@ export function UploadDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
+          {errorCount > 0 && pendingCount === 0 && (
+            <Button
+              variant="outline"
+              onClick={retryErrors}
+              className="border-destructive/30 text-destructive hover:bg-destructive/10"
+            >
+              Retry failed ({errorCount})
+            </Button>
+          )}
           <Button
             onClick={handleUpload}
-            disabled={pendingCount === 0}
+            disabled={!canUpload}
             className="bg-ember text-ember-foreground hover:brightness-110"
           >
-            Upload {pendingCount > 0 ? `(${pendingCount})` : ""}
+            Upload {pendingCount > 0 ? `(${pendingCount})` : errorCount > 0 ? `(${errorCount} to retry)` : ""}
           </Button>
         </div>
       </div>
