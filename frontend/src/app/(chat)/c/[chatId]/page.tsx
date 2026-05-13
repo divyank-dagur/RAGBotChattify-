@@ -19,6 +19,7 @@ export default function ChatPage() {
 
   const [title, setTitle] = useState("Chat");
   const [modelId, setModelId] = useState("gpt-4o-mini");
+  const [collectionId, setCollectionId] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const initialSentRef = useRef(false);
   const loadedChatIdRef = useRef<string | null>(null);
@@ -35,6 +36,7 @@ export default function ChatPage() {
         if (cancelled) return;
         setTitle(chat.title);
         setModelId(chat.model_id);
+        setCollectionId(chat.collection_id);
         stream.setMessages(chat.messages);
         loadedChatIdRef.current = chatId;
         setLoaded(true);
@@ -85,6 +87,19 @@ export default function ChatPage() {
       }
     },
     [chatId, modelId],
+  );
+
+  const handleCollectionChange = useCallback(
+    async (id: string | null) => {
+      const prev = collectionId;
+      setCollectionId(id);
+      try {
+        await api.patch(`/chats/${chatId}`, { collection_id: id });
+      } catch {
+        setCollectionId(prev);
+      }
+    },
+    [chatId, collectionId],
   );
 
   const handleShare = useCallback(async () => {
@@ -172,6 +187,8 @@ export default function ChatPage() {
         citations={stream.citations}
         modelId={modelId}
         onModelChange={handleModelChange}
+        collectionId={collectionId}
+        onCollectionChange={handleCollectionChange}
         onSendMessage={handleSend}
         onStopStreaming={stream.stopStreaming}
       />

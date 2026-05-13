@@ -10,6 +10,7 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 import { ModelSelector } from "./model-selector";
+import { CollectionSelector } from "./collection-selector";
 import { cn } from "@/lib/utils";
 
 interface MessageInputProps {
@@ -18,6 +19,8 @@ interface MessageInputProps {
   isStreaming: boolean;
   modelId: string;
   onModelChange: (id: string) => void;
+  collectionId: string | null;
+  onCollectionChange: (id: string | null) => void;
   disabled?: boolean;
   className?: string;
 }
@@ -28,6 +31,8 @@ export function MessageInput({
   isStreaming,
   modelId,
   onModelChange,
+  collectionId,
+  onCollectionChange,
   disabled = false,
   className,
 }: MessageInputProps) {
@@ -99,6 +104,11 @@ export function MessageInput({
               value={modelId}
               onChange={onModelChange}
               compact
+            />
+
+            <CollectionSelector
+              value={collectionId}
+              onChange={onCollectionChange}
             />
 
             <Tooltip>

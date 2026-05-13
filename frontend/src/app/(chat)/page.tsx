@@ -14,22 +14,22 @@ export default function NewChatPage() {
   const sidebar = useSidebar();
   const stream = useChatStream();
   const [modelId, setModelId] = useState("gpt-4o-mini");
+  const [collectionId, setCollectionId] = useState<string | null>(null);
 
   const handleSend = useCallback(
     async (content: string) => {
-      // Create a new chat then send the message
       try {
         const chat = await api.post<Chat>("/chats", {
           title: content.slice(0, 80),
           model_id: modelId,
+          collection_id: collectionId,
         });
-        // Navigate to the chat page which will handle the message
         router.push(`/c/${chat.id}?q=${encodeURIComponent(content)}`);
       } catch {
         // Handle error
       }
     },
-    [modelId, router],
+    [modelId, collectionId, router],
   );
 
   return (
@@ -46,6 +46,8 @@ export default function NewChatPage() {
         citations={stream.citations}
         modelId={modelId}
         onModelChange={setModelId}
+        collectionId={collectionId}
+        onCollectionChange={setCollectionId}
         onSendMessage={handleSend}
         onStopStreaming={stream.stopStreaming}
       />

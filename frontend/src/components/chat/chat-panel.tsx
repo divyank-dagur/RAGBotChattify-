@@ -12,6 +12,8 @@ interface ChatPanelProps {
   citations: Citation[];
   modelId: string;
   onModelChange: (id: string) => void;
+  collectionId: string | null;
+  onCollectionChange: (id: string | null) => void;
   onSendMessage: (content: string, strictRag?: boolean) => void;
   onStopStreaming: () => void;
   className?: string;
@@ -41,6 +43,8 @@ export function ChatPanel({
   citations,
   modelId,
   onModelChange,
+  collectionId,
+  onCollectionChange,
   onSendMessage,
   onStopStreaming,
   className,
@@ -114,6 +118,8 @@ export function ChatPanel({
         isStreaming={isStreaming}
         modelId={modelId}
         onModelChange={onModelChange}
+        collectionId={collectionId}
+        onCollectionChange={onCollectionChange}
       />
     </div>
   );
