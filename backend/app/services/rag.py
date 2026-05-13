@@ -7,7 +7,7 @@ from functools import partial
 
 from rank_bm25 import BM25Okapi
 
-from app.vector_store.client import get_chroma_client
+from app.vector_store.client import get_chroma_client, get_embedding_function
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,10 @@ def _tokenize(text: str) -> list[str]:
 def _query_hybrid(query: str, collection_id: str) -> list[dict] | None:
     """Hybrid search: combines ChromaDB vector search with BM25 keyword search."""
     client = get_chroma_client()
-    collection = client.get_collection(name=f"collection_{collection_id}")
+    collection = client.get_collection(
+        name=f"collection_{collection_id}",
+        embedding_function=get_embedding_function(),
+    )
 
     # Fetch more candidates for re-ranking
     n_candidates = 15
