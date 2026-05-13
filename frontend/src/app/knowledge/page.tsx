@@ -55,6 +55,18 @@ export default function KnowledgePage() {
     if (selectedId) fetchDocuments(selectedId);
   }, [selectedId, fetchDocuments]);
 
+  // Auto-poll for document status updates while any doc is processing
+  useEffect(() => {
+    if (!selectedId) return;
+    const hasProcessing = documents.some((d) => d.status === "processing" || d.status === "pending");
+    if (!hasProcessing) return;
+
+    const interval = setInterval(() => {
+      fetchDocuments(selectedId);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [selectedId, documents, fetchDocuments]);
+
   const handleCreate = async () => {
     if (!newName.trim()) return;
     try {
